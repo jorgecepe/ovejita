@@ -8,10 +8,69 @@ import tkinter as tk
 from PIL import Image, ImageDraw, ImageTk
 import random
 import sys
+import io
+import ctypes
+from ctypes import wintypes
+
+# Configure UTF-8 encoding for Windows console
+if sys.platform == 'win32':
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+
+    # Windows API functions for window detection
+    user32 = ctypes.windll.user32
+
+    # Define structures
+    class RECT(ctypes.Structure):
+        _fields_ = [
+            ('left', ctypes.c_long),
+            ('top', ctypes.c_long),
+            ('right', ctypes.c_long),
+            ('bottom', ctypes.c_long)
+        ]
+
+# Global list to keep track of all sheep
+sheep_list = []
+
+def get_visible_windows():
+    """Get list of visible window rectangles (Windows only)"""
+    if sys.platform != 'win32':
+        return []
+
+    windows = []
+
+    def enum_windows_callback(hwnd, lParam):
+        if user32.IsWindowVisible(hwnd):
+            # Skip our own sheep windows
+            class_name = ctypes.create_unicode_buffer(256)
+            user32.GetClassNameW(hwnd, class_name, 256)
+            if 'Toplevel' in class_name.value or class_name.value == 'Tk':
+                return True
+
+            rect = RECT()
+            if user32.GetWindowRect(hwnd, ctypes.byref(rect)):
+                # Only consider windows with reasonable size
+                width = rect.right - rect.left
+                height = rect.bottom - rect.top
+                if width > 50 and height > 50 and rect.top > 0:
+                    windows.append({
+                        'left': rect.left,
+                        'top': rect.top,
+                        'right': rect.right,
+                        'bottom': rect.bottom
+                    })
+        return True
+
+    EnumWindowsProc = ctypes.WINFUNCTYPE(ctypes.c_bool, wintypes.HWND, wintypes.LPARAM)
+    user32.EnumWindows(EnumWindowsProc(enum_windows_callback), 0)
+
+    return windows
 
 class Sheep:
-    def __init__(self, root):
-        self.root = root
+    def __init__(self, main_root):
+        self.main_root = main_root
+
+        # Create a new Toplevel window for this sheep
+        self.root = tk.Toplevel(main_root)
         self.root.title("Ovejita")
 
         # Make window transparent and always on top
@@ -20,8 +79,8 @@ class Sheep:
         self.root.overrideredirect(True)  # Remove window decorations
 
         # Get screen dimensions
-        self.screen_width = root.winfo_screenwidth()
-        self.screen_height = root.winfo_screenheight()
+        self.screen_width = self.main_root.winfo_screenwidth()
+        self.screen_height = self.main_root.winfo_screenheight()
 
         # Sheep properties
         self.sheep_width = 64
@@ -32,6 +91,7 @@ class Sheep:
         self.velocity_y = 0
         self.gravity = 0.5
         self.on_ground = False
+        self.current_window = None  # Track which window sheep is on
 
         # Animation state
         self.state = "walk_right"  # walk_right, walk_left, fall
@@ -40,7 +100,7 @@ class Sheep:
 
         # Create canvas
         self.canvas = tk.Canvas(
-            root,
+            self.root,
             width=self.sheep_width,
             height=self.sheep_height,
             bg='black',
@@ -64,6 +124,7 @@ class Sheep:
         # Bind click to drag
         self.canvas.bind('<Button-1>', self.on_click)
         self.canvas.bind('<B1-Motion>', self.on_drag)
+        self.canvas.bind('<ButtonRelease-1>', self.on_release)
         self.canvas.bind('<Double-Button-1>', self.on_double_click)
 
         self.dragging = False
@@ -191,9 +252,53 @@ class Sheep:
             self.velocity_y = 0
             self.update_position()
 
+    def on_release(self, event):
+        """Handle mouse release to stop dragging"""
+        self.dragging = False
+
     def on_double_click(self, event):
-        """Double click to close"""
-        self.root.quit()
+        """Double click to spawn a new sheep"""
+        global sheep_list
+        new_sheep = Sheep(self.main_root)
+        sheep_list.append(new_sheep)
+        print(f"🐑 Nueva ovejita! Total: {len(sheep_list)} ovejitas")
+
+    def find_surface_below(self):
+        """Find the surface (window top or ground) below the sheep"""
+        sheep_bottom = self.y + self.sheep_height
+        sheep_center_x = self.x + self.sheep_width // 2
+
+        ground_level = self.screen_height - self.sheep_height - 40  # Default ground
+        self.current_window = None  # Track which window we're on
+
+        if sys.platform == 'win32':
+            windows = get_visible_windows()
+
+            # Find windows that could be below the sheep
+            for win in windows:
+                # Check if sheep's center is horizontally over the window
+                if win['left'] <= sheep_center_x <= win['right']:
+                    # Check if window top is below sheep bottom
+                    if win['top'] >= sheep_bottom - 10:  # Small tolerance
+                        # Check if this is closer than current ground
+                        if win['top'] < ground_level + self.sheep_height:
+                            ground_level = win['top'] - self.sheep_height
+                            self.current_window = win
+
+        return ground_level
+
+    def check_window_edge(self):
+        """Check if sheep is at the edge of a window"""
+        if not hasattr(self, 'current_window') or self.current_window is None:
+            return False
+
+        sheep_center_x = self.x + self.sheep_width // 2
+
+        # Check if we're about to walk off the edge
+        if self.velocity_x > 0:  # Moving right
+            return sheep_center_x + 10 >= self.current_window['right']
+        else:  # Moving left
+            return sheep_center_x - 10 <= self.current_window['left']
 
     def animate(self):
         """Main animation loop"""
@@ -204,10 +309,12 @@ class Sheep:
             self.velocity_y += self.gravity
             self.y += self.velocity_y
 
-            # Check ground collision
-            ground_level = self.screen_height - self.sheep_height - 40  # Account for taskbar
-            if self.y >= ground_level:
-                self.y = ground_level
+            # Find the surface below (could be window or ground)
+            surface_level = self.find_surface_below()
+
+            # Check collision with surface
+            if self.y >= surface_level:
+                self.y = surface_level
                 self.velocity_y = 0
                 self.on_ground = True
             else:
@@ -216,6 +323,11 @@ class Sheep:
             # Move horizontally when on ground
             if self.on_ground:
                 self.x += self.velocity_x
+
+                # Check if at window edge and turn around
+                if self.check_window_edge():
+                    self.velocity_x = -self.velocity_x
+                    self.state = "walk_right" if self.velocity_x > 0 else "walk_left"
 
                 # Change direction at screen edges
                 if self.x <= 0:
@@ -256,22 +368,29 @@ class Sheep:
         self.root.after(33, self.animate)  # ~30 FPS
 
 def main():
+    global sheep_list
+
     print("🐑 Ovejita Desktop Pet")
     print("=" * 40)
     print("La ovejita caminará por tu pantalla!")
     print("")
     print("Controles:")
     print("  • Arrastra la oveja para moverla")
-    print("  • Doble clic para cerrar")
+    print("  • Doble clic para crear más ovejitas")
+    print("  • Ctrl+C para cerrar")
     print("=" * 40)
 
     root = tk.Tk()
-    app = Sheep(root)
+    root.withdraw()  # Hide the main window
+
+    # Create first sheep
+    first_sheep = Sheep(root)
+    sheep_list.append(first_sheep)
 
     try:
         root.mainloop()
     except KeyboardInterrupt:
-        print("\n¡Adiós ovejita! 🐑")
+        print("\n¡Adiós ovejitas! 🐑")
         sys.exit(0)
 
 if __name__ == "__main__":
