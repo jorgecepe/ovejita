@@ -7,16 +7,42 @@ Una recreación del clásico programa de los años 90 "eSheep", donde una ovejit
 Este programa crea una ovejita animada que:
 - Camina libremente por tu pantalla
 - Cae con gravedad cuando está en el aire
-- Salta aleatoriamente
+- Salta aleatoriamente y cuando choca con otras ovejas
 - Cambia de dirección en los bordes de la pantalla
 - Puede ser arrastrada con el mouse
-- Siempre permanece visible sobre otras ventanas
+- Cada oveja tiene un color aleatorio (blanco a gris suave)
+- Múltiples ovejas pueden coexistir en la pantalla
+- Siempre permanece visible sobre todas las demás ventanas
+- En Windows, camina sobre las ventanas abiertas
+
+## 🚀 Inicio Rápido
+
+### Para usuarios de Windows (sin Python)
+
+Si no tienes Python instalado, puedes usar el ejecutable:
+
+1. **Descarga** `Ovejita.exe` (ver sección Releases)
+2. **Doble clic** en el archivo
+3. **¡Listo!** La ovejita aparecerá en tu escritorio
+
+**Nota**: Windows puede mostrar una advertencia la primera vez. Click en "Más información" → "Ejecutar de todas formas"
+
+### Para desarrolladores (con Python)
+
+Continúa leyendo las secciones de instalación y uso más abajo.
+
+---
 
 ## Requisitos
 
+### Para ejecutar el código fuente:
 - Python 3.12 (recomendado, incluye Tkinter)
 - Tkinter (incluido con Python 3.12)
 - Pillow (PIL)
+
+### Para crear el ejecutable .exe:
+- Todo lo anterior, más:
+- PyInstaller (`pip install pyinstaller`)
 
 ## Instalación
 
@@ -58,16 +84,63 @@ chmod +x ovejita.py
 ### Controles:
 
 - **Arrastrar**: Haz clic y arrastra la ovejita para moverla
-- **Doble clic**: Cierra el programa
-- **Ctrl+C** en la terminal: También cierra el programa
+- **Doble clic**: Crea una nueva ovejita
+- **Ctrl+C** en la terminal: Cierra el programa
+
+## 📦 Crear Ejecutable de Windows (.exe)
+
+¿Quieres compartir el programa con alguien que no tiene Python? Puedes crear un archivo `.exe`:
+
+### Método Rápido (Recomendado)
+
+```bash
+# 1. Instalar dependencias
+pip install -r requirements-build.txt
+
+# 2. Crear el ícono (opcional)
+python create_icon.py
+
+# 3. Construir el ejecutable
+python build_exe.py
+```
+
+El archivo `Ovejita.exe` estará en la carpeta `dist/`.
+
+### Método Manual
+
+```bash
+# Instalar PyInstaller
+pip install pyinstaller
+
+# Crear ícono (opcional)
+python create_icon.py
+
+# Construir ejecutable
+pyinstaller --onefile --windowed --icon=sheep_icon.ico --name=Ovejita ovejita.py
+```
+
+### Distribución
+
+El archivo `.exe` resultante:
+- **Tamaño**: ~15-25 MB (incluye Python y todas las dependencias)
+- **Funciona en cualquier Windows** sin necesidad de instalar Python
+- **Portable**: Un solo archivo, fácil de compartir
+
+**Para instrucciones detalladas**, consulta [BUILD_INSTRUCTIONS.md](BUILD_INSTRUCTIONS.md)
 
 ## Características
 
 - **Animación fluida**: La ovejita tiene diferentes animaciones para caminar y caer
-- **Física realista**: Implementa gravedad y detección de colisiones con los bordes
-- **Comportamiento aleatorio**: La ovejita toma decisiones aleatorias (cambiar dirección, saltar)
+- **Diseño realista**: Patas visibles con pezuñas, ojos negros grandes, proporción de oveja real
+- **Física realista**: Implementa gravedad y detección de colisiones
+- **Colisiones entre ovejas**: Las ovejas saltan sobre otras ovejas manteniendo su inercia lateral
+- **Múltiples ovejas**: Crea tantas ovejas como quieras con doble clic
+- **Colores variados**: Cada oveja tiene un color aleatorio entre blanco y gris suave
+- **Comportamiento aleatorio**: Las ovejas toman decisiones aleatorias (cambiar dirección, saltar)
+- **Detección de ventanas** (Windows): Las ovejas caminan sobre las ventanas abiertas
 - **Ventana transparente**: Solo se ve la ovejita, sin bordes de ventana
-- **Siempre visible**: La ovejita permanece sobre todas las demás ventanas
+- **Siempre visible**: Las ovejas permanecen sobre todas las demás ventanas
+- **Tamaño optimizado**: 96x96 píxeles (50% más grande que la versión original)
 
 ## Cómo funciona
 
