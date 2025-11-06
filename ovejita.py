@@ -82,9 +82,9 @@ class Sheep:
         self.screen_width = self.main_root.winfo_screenwidth()
         self.screen_height = self.main_root.winfo_screenheight()
 
-        # Sheep properties
-        self.sheep_width = 64
-        self.sheep_height = 64
+        # Sheep properties - 50% larger (64 -> 96)
+        self.sheep_width = 96
+        self.sheep_height = 96
         self.x = random.randint(100, self.screen_width - 200)
         self.y = 100
         self.velocity_x = 2
@@ -92,6 +92,10 @@ class Sheep:
         self.gravity = 0.5
         self.on_ground = False
         self.current_window = None  # Track which window sheep is on
+
+        # Random color between white and soft gray
+        gray_value = random.randint(200, 255)  # Range from gray to white
+        self.body_color = (gray_value, gray_value, gray_value)
 
         # Animation state
         self.state = "walk_right"  # walk_right, walk_left, fall
@@ -142,35 +146,79 @@ class Sheep:
             'fall': []
         }
 
+        # Scale factor for the new size (96 vs 64)
+        s = 1.5
+
         # Create walking right animation (2 frames)
         for frame in range(2):
             img = Image.new('RGBA', (self.sheep_width, self.sheep_height), (0, 0, 0, 0))
             draw = ImageDraw.Draw(img)
 
-            # Body
-            body_y = 25 + (2 if frame == 1 else 0)
-            draw.ellipse([15, body_y, 50, body_y + 20], fill='white', outline='gray')
+            # Body (larger, more oval)
+            body_y = int(35 * s) + (3 if frame == 1 else 0)
+            draw.ellipse([int(15 * s), body_y, int(55 * s), body_y + int(25 * s)],
+                        fill=self.body_color, outline='gray', width=2)
 
-            # Head
-            head_x = 45
-            draw.ellipse([head_x, 20, head_x + 15, 35], fill='white', outline='gray')
+            # Head (more defined)
+            head_x = int(50 * s)
+            draw.ellipse([head_x, int(25 * s), head_x + int(20 * s), int(45 * s)],
+                        fill=self.body_color, outline='gray', width=2)
 
-            # Ears
-            draw.ellipse([head_x + 2, 18, head_x + 6, 24], fill='pink', outline='gray')
-            draw.ellipse([head_x + 9, 18, head_x + 13, 24], fill='pink', outline='gray')
+            # Snout/Face (lighter color)
+            face_color = tuple(min(c + 30, 255) for c in self.body_color)
+            draw.ellipse([head_x + int(8 * s), int(32 * s), head_x + int(18 * s), int(42 * s)],
+                        fill=face_color, outline='gray')
 
-            # Eye
-            draw.ellipse([head_x + 10, 25, head_x + 12, 27], fill='black')
+            # Ears (more visible)
+            draw.ellipse([head_x + int(2 * s), int(22 * s), head_x + int(8 * s), int(30 * s)],
+                        fill='pink', outline='gray', width=1)
+            draw.ellipse([head_x + int(12 * s), int(22 * s), head_x + int(18 * s), int(30 * s)],
+                        fill='pink', outline='gray', width=1)
 
-            # Legs (alternate for walking animation)
-            leg_offset = 3 if frame == 0 else -3
-            draw.line([20, body_y + 20, 20 + leg_offset, body_y + 30], fill='black', width=2)
-            draw.line([30, body_y + 20, 30 - leg_offset, body_y + 30], fill='black', width=2)
-            draw.line([35, body_y + 20, 35 + leg_offset, body_y + 30], fill='black', width=2)
-            draw.line([45, body_y + 20, 45 - leg_offset, body_y + 30], fill='black', width=2)
+            # Eye (bigger and more visible)
+            draw.ellipse([head_x + int(13 * s), int(33 * s), head_x + int(17 * s), int(37 * s)],
+                        fill='black')
 
-            # Tail
-            draw.arc([10, body_y + 5, 20, body_y + 15], 0, 180, fill='white', width=3)
+            # Legs with hooves (more realistic, wider)
+            leg_offset = 5 if frame == 0 else -5
+            leg_color = 'black'
+
+            # Front left leg
+            leg_x = int(25 * s)
+            draw.rectangle([leg_x - 2, body_y + int(25 * s), leg_x + 2, body_y + int(25 * s) + leg_offset + int(12 * s)],
+                          fill=leg_color)
+            draw.ellipse([leg_x - 3, body_y + int(25 * s) + leg_offset + int(10 * s),
+                         leg_x + 3, body_y + int(25 * s) + leg_offset + int(16 * s)],
+                        fill=leg_color)
+
+            # Front right leg
+            leg_x = int(35 * s)
+            draw.rectangle([leg_x - 2, body_y + int(25 * s), leg_x + 2, body_y + int(25 * s) - leg_offset + int(12 * s)],
+                          fill=leg_color)
+            draw.ellipse([leg_x - 3, body_y + int(25 * s) - leg_offset + int(10 * s),
+                         leg_x + 3, body_y + int(25 * s) - leg_offset + int(16 * s)],
+                        fill=leg_color)
+
+            # Back left leg
+            leg_x = int(45 * s)
+            draw.rectangle([leg_x - 2, body_y + int(25 * s), leg_x + 2, body_y + int(25 * s) + leg_offset + int(12 * s)],
+                          fill=leg_color)
+            draw.ellipse([leg_x - 3, body_y + int(25 * s) + leg_offset + int(10 * s),
+                         leg_x + 3, body_y + int(25 * s) + leg_offset + int(16 * s)],
+                        fill=leg_color)
+
+            # Back right leg
+            leg_x = int(55 * s)
+            draw.rectangle([leg_x - 2, body_y + int(25 * s), leg_x + 2, body_y + int(25 * s) - leg_offset + int(12 * s)],
+                          fill=leg_color)
+            draw.ellipse([leg_x - 3, body_y + int(25 * s) - leg_offset + int(10 * s),
+                         leg_x + 3, body_y + int(25 * s) - leg_offset + int(16 * s)],
+                        fill=leg_color)
+
+            # Fluffy tail
+            tail_color = self.body_color
+            draw.ellipse([int(8 * s), body_y + int(8 * s), int(18 * s), body_y + int(18 * s)],
+                        fill=tail_color, outline='gray')
 
             sprites['walk_right'].append(ImageTk.PhotoImage(img))
 
@@ -180,29 +228,66 @@ class Sheep:
             draw = ImageDraw.Draw(img)
 
             # Body
-            body_y = 25 + (2 if frame == 1 else 0)
-            draw.ellipse([15, body_y, 50, body_y + 20], fill='white', outline='gray')
+            body_y = int(35 * s) + (3 if frame == 1 else 0)
+            draw.ellipse([int(15 * s), body_y, int(55 * s), body_y + int(25 * s)],
+                        fill=self.body_color, outline='gray', width=2)
 
             # Head (on left side)
-            head_x = 5
-            draw.ellipse([head_x, 20, head_x + 15, 35], fill='white', outline='gray')
+            head_x = int(5 * s)
+            draw.ellipse([head_x, int(25 * s), head_x + int(20 * s), int(45 * s)],
+                        fill=self.body_color, outline='gray', width=2)
+
+            # Snout/Face
+            face_color = tuple(min(c + 30, 255) for c in self.body_color)
+            draw.ellipse([head_x + int(2 * s), int(32 * s), head_x + int(12 * s), int(42 * s)],
+                        fill=face_color, outline='gray')
 
             # Ears
-            draw.ellipse([head_x + 2, 18, head_x + 6, 24], fill='pink', outline='gray')
-            draw.ellipse([head_x + 9, 18, head_x + 13, 24], fill='pink', outline='gray')
+            draw.ellipse([head_x + int(2 * s), int(22 * s), head_x + int(8 * s), int(30 * s)],
+                        fill='pink', outline='gray', width=1)
+            draw.ellipse([head_x + int(12 * s), int(22 * s), head_x + int(18 * s), int(30 * s)],
+                        fill='pink', outline='gray', width=1)
 
             # Eye
-            draw.ellipse([head_x + 3, 25, head_x + 5, 27], fill='black')
+            draw.ellipse([head_x + int(3 * s), int(33 * s), head_x + int(7 * s), int(37 * s)],
+                        fill='black')
 
-            # Legs
-            leg_offset = 3 if frame == 0 else -3
-            draw.line([20, body_y + 20, 20 - leg_offset, body_y + 30], fill='black', width=2)
-            draw.line([30, body_y + 20, 30 + leg_offset, body_y + 30], fill='black', width=2)
-            draw.line([35, body_y + 20, 35 - leg_offset, body_y + 30], fill='black', width=2)
-            draw.line([45, body_y + 20, 45 + leg_offset, body_y + 30], fill='black', width=2)
+            # Legs with hooves
+            leg_offset = 5 if frame == 0 else -5
+            leg_color = 'black'
+
+            # Legs (mirrored positions)
+            leg_x = int(20 * s)
+            draw.rectangle([leg_x - 2, body_y + int(25 * s), leg_x + 2, body_y + int(25 * s) - leg_offset + int(12 * s)],
+                          fill=leg_color)
+            draw.ellipse([leg_x - 3, body_y + int(25 * s) - leg_offset + int(10 * s),
+                         leg_x + 3, body_y + int(25 * s) - leg_offset + int(16 * s)],
+                        fill=leg_color)
+
+            leg_x = int(30 * s)
+            draw.rectangle([leg_x - 2, body_y + int(25 * s), leg_x + 2, body_y + int(25 * s) + leg_offset + int(12 * s)],
+                          fill=leg_color)
+            draw.ellipse([leg_x - 3, body_y + int(25 * s) + leg_offset + int(10 * s),
+                         leg_x + 3, body_y + int(25 * s) + leg_offset + int(16 * s)],
+                        fill=leg_color)
+
+            leg_x = int(40 * s)
+            draw.rectangle([leg_x - 2, body_y + int(25 * s), leg_x + 2, body_y + int(25 * s) - leg_offset + int(12 * s)],
+                          fill=leg_color)
+            draw.ellipse([leg_x - 3, body_y + int(25 * s) - leg_offset + int(10 * s),
+                         leg_x + 3, body_y + int(25 * s) - leg_offset + int(16 * s)],
+                        fill=leg_color)
+
+            leg_x = int(50 * s)
+            draw.rectangle([leg_x - 2, body_y + int(25 * s), leg_x + 2, body_y + int(25 * s) + leg_offset + int(12 * s)],
+                          fill=leg_color)
+            draw.ellipse([leg_x - 3, body_y + int(25 * s) + leg_offset + int(10 * s),
+                         leg_x + 3, body_y + int(25 * s) + leg_offset + int(16 * s)],
+                        fill=leg_color)
 
             # Tail
-            draw.arc([45, body_y + 5, 55, body_y + 15], 0, 180, fill='white', width=3)
+            draw.ellipse([int(52 * s), body_y + int(8 * s), int(62 * s), body_y + int(18 * s)],
+                        fill=self.body_color, outline='gray')
 
             sprites['walk_left'].append(ImageTk.PhotoImage(img))
 
@@ -211,24 +296,40 @@ class Sheep:
         draw = ImageDraw.Draw(img)
 
         # Body (rotated look)
-        draw.ellipse([20, 25, 45, 45], fill='white', outline='gray')
+        draw.ellipse([int(25 * s), int(30 * s), int(55 * s), int(55 * s)],
+                    fill=self.body_color, outline='gray', width=2)
 
         # Head
-        draw.ellipse([25, 15, 40, 30], fill='white', outline='gray')
+        draw.ellipse([int(32 * s), int(18 * s), int(52 * s), int(38 * s)],
+                    fill=self.body_color, outline='gray', width=2)
+
+        # Face
+        face_color = tuple(min(c + 30, 255) for c in self.body_color)
+        draw.ellipse([int(36 * s), int(24 * s), int(48 * s), int(36 * s)],
+                    fill=face_color, outline='gray')
 
         # Ears
-        draw.ellipse([27, 13, 31, 19], fill='pink', outline='gray')
-        draw.ellipse([34, 13, 38, 19], fill='pink', outline='gray')
+        draw.ellipse([int(34 * s), int(16 * s), int(40 * s), int(24 * s)],
+                    fill='pink', outline='gray', width=1)
+        draw.ellipse([int(44 * s), int(16 * s), int(50 * s), int(24 * s)],
+                    fill='pink', outline='gray', width=1)
 
-        # Eyes (surprised)
-        draw.ellipse([28, 20, 31, 23], fill='black')
-        draw.ellipse([34, 20, 37, 23], fill='black')
+        # Eyes (surprised, both visible)
+        draw.ellipse([int(37 * s), int(26 * s), int(41 * s), int(30 * s)], fill='black')
+        draw.ellipse([int(43 * s), int(26 * s), int(47 * s), int(30 * s)], fill='black')
 
         # Legs (flailing)
-        draw.line([22, 35, 15, 40], fill='black', width=2)
-        draw.line([28, 40, 22, 50], fill='black', width=2)
-        draw.line([37, 40, 43, 50], fill='black', width=2)
-        draw.line([43, 35, 50, 40], fill='black', width=2)
+        draw.rectangle([int(28 * s), int(45 * s), int(32 * s), int(58 * s)], fill='black')
+        draw.ellipse([int(26 * s), int(56 * s), int(34 * s), int(62 * s)], fill='black')
+
+        draw.rectangle([int(38 * s), int(48 * s), int(42 * s), int(62 * s)], fill='black')
+        draw.ellipse([int(36 * s), int(60 * s), int(44 * s), int(66 * s)], fill='black')
+
+        draw.rectangle([int(48 * s), int(48 * s), int(52 * s), int(62 * s)], fill='black')
+        draw.ellipse([int(46 * s), int(60 * s), int(54 * s), int(66 * s)], fill='black')
+
+        draw.rectangle([int(58 * s), int(45 * s), int(62 * s), int(58 * s)], fill='black')
+        draw.ellipse([int(56 * s), int(56 * s), int(64 * s), int(62 * s)], fill='black')
 
         sprites['fall'].append(ImageTk.PhotoImage(img))
 
@@ -300,6 +401,39 @@ class Sheep:
         else:  # Moving left
             return sheep_center_x - 10 <= self.current_window['left']
 
+    def check_collision_with_sheep(self):
+        """Check if this sheep collides with any other sheep"""
+        global sheep_list
+
+        my_rect = {
+            'left': self.x,
+            'right': self.x + self.sheep_width,
+            'top': self.y,
+            'bottom': self.y + self.sheep_height
+        }
+
+        for other_sheep in sheep_list:
+            if other_sheep is self:
+                continue
+
+            other_rect = {
+                'left': other_sheep.x,
+                'right': other_sheep.x + other_sheep.sheep_width,
+                'top': other_sheep.y,
+                'bottom': other_sheep.y + other_sheep.sheep_height
+            }
+
+            # Check if rectangles overlap
+            if (my_rect['left'] < other_rect['right'] and
+                my_rect['right'] > other_rect['left'] and
+                my_rect['top'] < other_rect['bottom'] and
+                my_rect['bottom'] > other_rect['top']):
+
+                # Collision detected! Return the other sheep
+                return other_sheep
+
+        return None
+
     def animate(self):
         """Main animation loop"""
         if not self.dragging:
@@ -323,6 +457,15 @@ class Sheep:
             # Move horizontally when on ground
             if self.on_ground:
                 self.x += self.velocity_x
+
+                # Check collision with other sheep
+                colliding_sheep = self.check_collision_with_sheep()
+                if colliding_sheep is not None:
+                    # Jump over the other sheep, maintaining lateral inertia
+                    self.velocity_y = -15  # Strong jump
+                    self.on_ground = False
+                    # Keep velocity_x as is (maintain direction/inertia)
+                    self.state = "fall"  # Show falling/jumping animation
 
                 # Check if at window edge and turn around
                 if self.check_window_edge():
@@ -350,8 +493,17 @@ class Sheep:
                         self.velocity_y = -12
                         self.on_ground = False
             else:
-                # Falling
+                # Falling - maintain horizontal movement (inertia)
+                self.x += self.velocity_x
                 self.state = "fall"
+
+                # Still respect screen boundaries while in air
+                if self.x <= 0:
+                    self.x = 0
+                    self.velocity_x = abs(self.velocity_x)
+                elif self.x >= self.screen_width - self.sheep_width:
+                    self.x = self.screen_width - self.sheep_width
+                    self.velocity_x = -abs(self.velocity_x)
 
             # Update sprite
             if self.state == "fall":
